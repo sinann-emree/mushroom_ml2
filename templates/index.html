@@ -2,98 +2,131 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Mantar Tanıma Sistemi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantar Analiz Sistemi</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 1100px; margin: auto; }
-        h1 { color: #2c3e50; text-align: center; }
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
-        .input-group { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column; }
-        label { font-size: 13px; font-weight: bold; color: #444; margin-bottom: 6px; }
-        select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: white; font-size: 14px; }
-        .btn-predict { width: 100%; padding: 16px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; margin-top: 30px; font-weight: bold; }
-        .btn-predict:hover { background: #2ecc71; }
-        .result-box { margin-top: 25px; padding: 20px; border-radius: 8px; text-align: center; font-size: 24px; font-weight: bold; display: none; }
-        .safe { background: #e8f5e9; color: #2e7d32; border: 2px solid #2e7d32; }
-        .danger { background: #ffebee; color: #c62828; border: 2px solid #c62828; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f3; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+        p.subtitle { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .form-group { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #34495e; font-size: 0.9em; }
+        select { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; background: white; font-size: 14px; }
+        select:focus { outline: none; border-color: #3498db; box-shadow: 0 0 5px rgba(52,152,219,0.3); }
+
+        .btn-container { text-align: center; margin-top: 30px; }
+        button { background-color: #27ae60; color: white; border: none; padding: 15px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; transition: transform 0.2s, background 0.2s; box-shadow: 0 5px 15px rgba(39,174,96,0.3); }
+        button:hover { background-color: #2ecc71; transform: translateY(-2px); }
+        
+        #result { margin-top: 30px; padding: 20px; border-radius: 10px; text-align: center; font-size: 1.4em; font-weight: bold; display: none; }
+        .safe { background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+        .poison { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍄 Akıllı Mantar Analiz Sistemi</h1>
-        <p style="text-align: center; color: #666;">Aşağıdaki özelliklerden mantarı tanımlayın ve analiz edin.</p>
+
+<div class="container">
+    <h1>🍄 Mantar Analiz Sistemi</h1>
+    <p class="subtitle">Makine Öğrenmesi ile Zehirli/Yenilebilir Tahmini</p>
+
+    <form id="predictionForm">
+        <div class="grid-container" id="formGrid">
+            </div>
+        <div class="btn-container">
+            <button type="submit">ANALİZ ET</button>
+        </div>
+    </form>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    // Modelin eğitildiği sütun sırasına göre Türkçe seçenekler
+    // One-Hot Encoding öncesi ham veri değerleri
+    const features = {
+        'cap-shape': { label: 'Şapka Şekli', options: {'b': 'Çan', 'c': 'Konik', 'x': 'Dışbükey', 'f': 'Düz', 'k': 'Topuzlu', 's': 'Çukur'} },
+        'cap-surface': { label: 'Şapka Yüzeyi', options: {'f': 'Lifli', 'g': 'Oluklu', 'y': 'Pullu', 's': 'Pürüzsüz'} },
+        'cap-color': { label: 'Şapka Rengi', options: {'n': 'Kahverengi', 'b': 'Devetüyü', 'c': 'Gri', 'g': 'Yeşil', 'r': 'Pembe', 'p': 'Mor', 'u': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
+        'bruises': { label: 'Morarma', options: {'t': 'Var', 'f': 'Yok'} },
+        'odor': { label: 'Koku', options: {'a': 'Badem', 'l': 'Anason', 'c': 'Krep', 'y': 'Balık', 'f': 'Pis', 'm': 'Küf', 'n': 'Yok', 'p': 'Keskin', 's': 'Baharatlı'} },
+        'gill-spacing': { label: 'Lamel Aralığı', options: {'c': 'Yakın', 'w': 'Kalabalık', 'd': 'Uzak'} },
+        'gill-size': { label: 'Lamel Boyutu', options: {'b': 'Geniş', 'n': 'Dar'} },
+        'gill-color': { label: 'Lamel Rengi', options: {'k': 'Siyah', 'n': 'Kahverengi', 'b': 'Devetüyü', 'h': 'Çikolata', 'g': 'Gri', 'r': 'Yeşil', 'o': 'Turuncu', 'p': 'Pembe', 'u': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
+        'stalk-shape': { label: 'Sap Şekli', options: {'e': 'Genişleyen', 't': 'Daralan'} },
+        'stalk-root': { label: 'Sap Kökü', options: {'b': 'Yumrulu', 'c': 'Kulüp', 'u': 'Fincan', 'e': 'Eşit', 'z': 'Köksü', 'r': 'Köklü', '?': 'Bilinmiyor'} },
+        'stalk-surface-above-ring': { label: 'Halka Üstü Yüzey', options: {'f': 'Lifli', 'y': 'Pullu', 'k': 'İpeksi', 's': 'Pürüzsüz'} },
+        'stalk-surface-below-ring': { label: 'Halka Altı Yüzey', options: {'f': 'Lifli', 'y': 'Pullu', 'k': 'İpeksi', 's': 'Pürüzsüz'} },
+        'stalk-color-above-ring': { label: 'Halka Üstü Renk', options: {'n': 'Kahverengi', 'b': 'Devetüyü', 'c': 'Gri', 'g': 'Yeşil', 'r': 'Pembe', 'p': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
+        'stalk-color-below-ring': { label: 'Halka Altı Renk', options: {'n': 'Kahverengi', 'b': 'Devetüyü', 'c': 'Gri', 'g': 'Yeşil', 'r': 'Pembe', 'p': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
+        'ring-number': { label: 'Halka Sayısı', options: {'n': 'Yok', 'o': 'Bir', 't': 'İki'} },
+        'ring-type': { label: 'Halka Tipi', options: {'c': 'Kırılgan', 'e': 'Alevlenen', 'f': 'Büyük', 'l': 'Gidici', 'n': 'Yok', 'p': 'Sarkık', 's': 'Kılıflı', 'z': 'Bölge'} },
+        'spore-print-color': { label: 'Spor Rengi', options: {'k': 'Siyah', 'n': 'Kahverengi', 'b': 'Devetüyü', 'h': 'Çikolata', 'r': 'Yeşil', 'o': 'Turuncu', 'u': 'Mor', 'w': 'Beyaz', 'y': 'Sarı'} },
+        'population': { label: 'Popülasyon', options: {'a': 'Bol', 'c': 'Küme', 'n': 'Çok', 's': 'Dağınık', 'v': 'Birkaç', 'y': 'Yalnız'} },
+        'habitat': { label: 'Yaşam Alanı', options: {'g': 'Çayır', 'l': 'Yapraklar', 'm': 'Çayır', 'p': 'Yollar', 'u': 'Kentsel', 'w': 'Atık', 'd': 'Orman'} }
+    };
+
+    const grid = document.getElementById('formGrid');
+
+    // Formu oluştur
+    for (const [key, value] of Object.entries(features)) {
+        const div = document.createElement('div');
+        div.className = 'form-group';
         
-        <form id="predictionForm">
-            <div class="grid-container" id="inputs"></div>
-            <button type="submit" class="btn-predict">ANALİZ ET</button>
-        </form>
+        let optionsHtml = '';
+        for (const [optKey, optVal] of Object.entries(value.options)) {
+            optionsHtml += `<option value="${optKey}">${optVal}</option>`;
+        }
+        
+        div.innerHTML = `
+            <label>${value.label}</label>
+            <select name="${key}" id="${key}">
+                ${optionsHtml}
+            </select>
+        `;
+        grid.appendChild(div);
+    }
 
-        <div id="resultArea" class="result-box"></div>
-    </div>
+    // Gönderme İşlemi
+    document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = '';
+        resultDiv.innerHTML = '⏳ Analiz ediliyor...';
+        resultDiv.style.backgroundColor = '#f0f0f0';
 
-    <script>
-        // Türkçe Eşleşmeler
-        const TR_DATA = {
-            'cap-shape': { label: 'Şapka Biçimi', options: {'b': 'Çan', 'c': 'Konik', 'x': 'Dışbükey', 'f': 'Düz', 'k': 'Topuzlu', 's': 'Çukur'} },
-            'cap-surface': { label: 'Şapka Yüzeyi', options: {'f': 'Lifli', 'g': 'Oluklu', 'y': 'Pullu', 's': 'Pürüzsüz'} },
-            'cap-color': { label: 'Şapka Rengi', options: {'n': 'Kahverengi', 'b': 'Devetüyü', 'c': 'Gri', 'g': 'Yeşil', 'r': 'Pembe', 'p': 'Mor', 'u': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
-            'bruises': { label: 'Morarma Durumu', options: {'t': 'Var', 'f': 'Yok'} },
-            'odor': { label: 'Koku', options: {'a': 'Badem', 'l': 'Anason', 'c': 'Krep', 'y': 'Balık', 'f': 'Pis', 'm': 'Küf', 'n': 'Yok', 'p': 'Keskin', 's': 'Baharatlı'} },
-            'gill-attachment': { label: 'Lamel Bağlantısı', options: {'a': 'Bağlı', 'd': 'İnişli', 'f': 'Serbest', 'n': 'Çentikli'} },
-            'gill-spacing': { label: 'Lamel Aralığı', options: {'c': 'Yakın', 'w': 'Kalabalık', 'd': 'Uzak'} },
-            'gill-size': { label: 'Lamel Boyutu', options: {'b': 'Geniş', 'n': 'Dar'} },
-            'gill-color': { label: 'Lamel Rengi', options: {'k': 'Siyah', 'n': 'Kahverengi', 'b': 'Devetüyü', 'h': 'Çikolata', 'g': 'Gri', 'r': 'Yeşil', 'o': 'Turuncu', 'p': 'Pembe', 'u': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
-            'stalk-shape': { label: 'Sap Biçimi', options: {'e': 'Genişleyen', 't': 'Daralan'} },
-            'stalk-root': { label: 'Sap Kökü', options: {'b': 'Yumrulu', 'c': 'Kulüp', 'u': 'Fincan', 'e': 'Eşit', 'z': 'Köksü', 'r': 'Köklü', '?': 'Bilinmiyor'} },
-            'stalk-surface-above-ring': { label: 'Halka Üstü Yüzey', options: {'f': 'Lifli', 'y': 'Pullu', 'k': 'İpeksi', 's': 'Pürüzsüz'} },
-            'stalk-surface-below-ring': { label: 'Halka Altı Yüzey', options: {'f': 'Lifli', 'y': 'Pullu', 'k': 'İpeksi', 's': 'Pürüzsüz'} },
-            'stalk-color-above-ring': { label: 'Halka Üstü Renk', options: {'n': 'Kahverengi', 'b': 'Devetüyü', 'c': 'Gri', 'g': 'Yeşil', 'r': 'Pembe', 'p': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
-            'stalk-color-below-ring': { label: 'Halka Altı Renk', options: {'n': 'Kahverengi', 'b': 'Devetüyü', 'c': 'Gri', 'g': 'Yeşil', 'r': 'Pembe', 'p': 'Mor', 'e': 'Kırmızı', 'w': 'Beyaz', 'y': 'Sarı'} },
-            'veil-color': { label: 'Kılıf Rengi', options: {'n': 'Kahverengi', 'o': 'Turuncu', 'w': 'Beyaz', 'y': 'Sarı'} },
-            'ring-number': { label: 'Halka Sayısı', options: {'n': 'Yok', 'o': 'Bir', 't': 'İki'} },
-            'ring-type': { label: 'Halka Tipi', options: {'c': 'Kırılgan', 'e': 'Alevlenen', 'f': 'Büyük', 'l': 'Gidici', 'n': 'Yok', 'p': 'Sarkık', 's': 'Kılıflı', 'z': 'Bölge'} },
-            'spore-print-color': { label: 'Spor Rengi', options: {'k': 'Siyah', 'n': 'Kahverengi', 'b': 'Devetüyü', 'h': 'Çikolata', 'r': 'Yeşil', 'o': 'Turuncu', 'u': 'Mor', 'w': 'Beyaz', 'y': 'Sarı'} },
-            'population': { label: 'Popülasyon', options: {'a': 'Bol', 'c': 'Küme', 'n': 'Çok', 's': 'Dağınık', 'v': 'Birkaç', 'y': 'Yalnız'} },
-            'habitat': { label: 'Yaşam Alanı', options: {'g': 'Çayır', 'l': 'Yapraklar', 'm': 'Çayır', 'p': 'Yollar', 'u': 'Kentsel', 'w': 'Atık', 'd': 'Orman'} }
-        };
+        const formData = {};
+        for (const key of Object.keys(features)) {
+            formData[key] = document.getElementById(key).value;
+        }
 
-        const inputDiv = document.getElementById('inputs');
-        // Dropdownları oluştur (Özellikleri Seçme Kısmı)
-        Object.keys(TR_DATA).forEach(key => {
-            const group = document.createElement('div');
-            group.className = 'input-group';
-            let opts = '';
-            for(let letter in TR_DATA[key].options) {
-                opts += `<option value="${letter}">${TR_DATA[key].options[letter]}</option>`;
-            }
-            group.innerHTML = `<label>${TR_DATA[key].label}</label><select id="${key}">${opts}</select>`;
-            inputDiv.appendChild(group);
-        });
-
-        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const resArea = document.getElementById('resultArea');
-            resArea.style.display = "block";
-            resArea.innerHTML = "Analiz ediliyor...";
-            resArea.className = "result-box";
-
-            const data = {};
-            Object.keys(TR_DATA).forEach(k => data[k] = document.getElementById(k).value);
-
-            const resp = await fetch('/predict', {
+        try {
+            const response = await fetch('/predict', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
             });
-            const result = await resp.json();
             
-            if(result.status === 'success') {
-                resArea.className = 'result-box ' + (result.class === 'ZEHİRLİ' ? 'danger' : 'safe');
-                resArea.innerHTML = `SONUÇ: %${result.prob} olasılıkla ${result.class}`;
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                resultDiv.innerHTML = `%${data.probability} olasılıkla ${data.prediction}`;
+                if (data.prediction.includes('ZEHİRLİ')) {
+                    resultDiv.className = 'poison';
+                } else {
+                    resultDiv.className = 'safe';
+                }
             } else {
-                resArea.innerHTML = "Bir hata oluştu: " + result.message;
+                resultDiv.innerHTML = 'Hata: ' + data.message;
             }
-        });
-    </script>
+        } catch (error) {
+            resultDiv.innerHTML = 'Sunucu hatası!';
+        }
+    });
+</script>
+
 </body>
 </html>

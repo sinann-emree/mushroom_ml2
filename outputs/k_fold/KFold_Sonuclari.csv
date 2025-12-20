@@ -1,0 +1,9 @@
+Model,Ortalama Accuracy
+Lojistik Regresyon,1.0
+Karar Agaci,1.0
+K-En Yakin Komsuluk (KNN),1.0
+Naive Bayes,0.9901522546419098
+SVM,1.0
+Rastgele Orman,1.0
+Gradient Boosting,1.0
+YSA,1.0

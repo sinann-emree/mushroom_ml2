@@ -1,0 +1,9 @@
+Model,Doğruluk (Accuracy),Duyarlılık (Sensitivity),Özgüllük (Specificity),F1-Skoru
+Lojistik Regresyon,0.9993846153846154,0.9987228607918263,1.0,0.9993610223642172
+Karar Agaci,1.0,1.0,1.0,1.0
+K-En Yakin Komsuluk (KNN),1.0,1.0,1.0,1.0
+Naive Bayes,0.9913846153846154,0.9974457215836526,0.9857482185273159,0.9911167512690355
+Destek Vektor Makineleri (SVM),1.0,1.0,1.0,1.0
+Rastgele Orman (Random Forest),1.0,1.0,1.0,1.0
+Gradient Boosting,0.9987692307692307,0.9974457215836526,1.0,0.9987212276214834
+Yapay Sinir Aglari (YSA),1.0,1.0,1.0,1.0

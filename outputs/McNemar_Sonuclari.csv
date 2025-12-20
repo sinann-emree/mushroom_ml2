@@ -1,0 +1,4 @@
+Model 1,Model 2,p-value,Sonuç,Model 1 Doğru/Model 2 Yanlış Sayısı,Model 1 Yanlış/Model 2 Doğru Sayısı
+Lojistik Regresyon,Random Forest,1.0,Fark Yok (Benzer Başarı),0,1
+Lojistik Regresyon,YSA,1.0,Fark Yok (Benzer Başarı),0,1
+Random Forest,YSA,1.0,Fark Yok (Benzer Başarı),0,0
